@@ -26,9 +26,7 @@ venv/
 ENV/
 
 logs/*.log
-specs/*.md
 !specs/.gitkeep
-data/*.md
 !data/.gitkeep
 
 .pytest_cache/
