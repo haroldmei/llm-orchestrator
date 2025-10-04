@@ -1,7 +1,14 @@
-model: claude-sonnet-4-20250514
+provider: deepseek
+model: deepseek-chat
 
 max_iterations: 5
 confidence_threshold: 0.9
+
+# Reviewer type: "default", "robust", or "structured"
+# - default: Simple regex extraction (current)
+# - robust: Multiple patterns + retry (recommended for quick improvement)
+# - structured: JSON schema output (best practice for production)
+reviewer_type: robust
 
 data_dir: data
 specs_dir: specs

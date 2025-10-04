@@ -12,17 +12,31 @@ from src.utils.config_loader import ConfigLoader
 
 class FeatureEngineeringOrchestrator:
     
-    def __init__(self, config_path: str = "config/config.yaml"):
+    def __init__(self, config_path: str = "config/config.yaml", reviewer_type: str = "default"):
         self.config = ConfigLoader.load(config_path)
         self.file_manager = FileManager(self.config)
         self.logger = self._setup_logger()
         
         self.designer = FEDesigner(self.config)
-        self.reviewer = FEReviewer(self.config)
+        self.reviewer = self._create_reviewer(reviewer_type)
         self.fixer = FEFixer(self.config)
         
         self.max_iterations = self.config.get("max_iterations", 5)
         self.confidence_threshold = self.config.get("confidence_threshold", 0.9)
+    
+    def _create_reviewer(self, reviewer_type: str):
+        """Factory method to create appropriate reviewer based on type"""
+        if reviewer_type == "robust":
+            from src.agents.fe_reviewer_robust import FEReviewerRobust
+            self.logger.info("Using robust regex reviewer")
+            return FEReviewerRobust(self.config)
+        elif reviewer_type == "structured":
+            from src.agents.fe_reviewer_improved import FEReviewerImproved
+            self.logger.info("Using structured JSON reviewer")
+            return FEReviewerImproved(self.config)
+        else:
+            self.logger.info("Using default regex reviewer")
+            return FEReviewer(self.config)
     
     def _setup_logger(self) -> logging.Logger:
         logger = logging.getLogger("Orchestrator")

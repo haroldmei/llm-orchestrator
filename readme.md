@@ -1,6 +1,6 @@
 # LLM Orchestrator for Feature Engineering
 
-An intelligent multi-agent orchestration system that automates feature engineering for BiLSTM deep learning models using Claude AI.
+An intelligent multi-agent orchestration system that automates feature engineering for BiLSTM deep learning models using LLM APIs (DeepSeek, Claude).
 
 ## Overview
 
@@ -18,8 +18,11 @@ The agents iterate until achieving 90%+ confidence or max iterations (5).
 # Install dependencies
 pip install -r requirements.txt
 
-# Set API key
-export ANTHROPIC_API_KEY=your_key_here
+# Set API key (DeepSeek is default)
+export DEEPSEEK_API_KEY=your_key_here
+
+# Or for Claude
+# export ANTHROPIC_API_KEY=your_key_here
 
 # Run pipeline
 python main.py --data-spec data/data_spec_example.md
@@ -49,10 +52,19 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed system design, component des
 
 Edit `config/config.yaml`:
 ```yaml
-model: claude-sonnet-4-20250514
+provider: deepseek              # "deepseek" or "anthropic"
+model: deepseek-chat            # or "claude-sonnet-4-20250514"
 max_iterations: 5
 confidence_threshold: 0.9
+reviewer_type: robust           # "default", "robust", or "structured"
 ```
+
+### Supported Providers
+
+- **DeepSeek** (default): Set `DEEPSEEK_API_KEY` environment variable
+- **Anthropic Claude**: Set `ANTHROPIC_API_KEY` environment variable
+
+Switch providers by updating the `provider` and `model` fields in `config.yaml`.
 
 ## Development
 

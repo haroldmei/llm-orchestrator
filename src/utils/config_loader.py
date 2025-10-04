@@ -26,8 +26,10 @@ class ConfigLoader:
     @staticmethod
     def _get_default_config() -> Dict[str, Any]:
         return {
+            "provider": "deepseek",
             "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY", ""),
-            "model": "claude-sonnet-4-20250514",
+            "deepseek_api_key": os.getenv("DEEPSEEK_API_KEY", ""),
+            "model": "deepseek-chat",
             "max_iterations": 5,
             "confidence_threshold": 0.9,
             "data_dir": "data",
@@ -39,6 +41,12 @@ class ConfigLoader:
     def _merge_env_vars(config: Dict[str, Any]) -> Dict[str, Any]:
         if "anthropic_api_key" not in config or not config["anthropic_api_key"]:
             config["anthropic_api_key"] = os.getenv("ANTHROPIC_API_KEY", "")
+        
+        if "deepseek_api_key" not in config or not config["deepseek_api_key"]:
+            config["deepseek_api_key"] = os.getenv("DEEPSEEK_API_KEY", "")
+        
+        if "provider" not in config:
+            config["provider"] = "deepseek"
         
         return config
 

@@ -43,7 +43,16 @@ def main():
         return
     
     logger.info("Initializing Feature Engineering Orchestrator")
-    orchestrator = FeatureEngineeringOrchestrator(config_path=args.config)
+    
+    # Load config to get reviewer type
+    from src.utils.config_loader import ConfigLoader
+    config = ConfigLoader.load(args.config)
+    reviewer_type = config.get("reviewer_type", "default")
+    
+    orchestrator = FeatureEngineeringOrchestrator(
+        config_path=args.config,
+        reviewer_type=reviewer_type
+    )
     
     logger.info(f"Processing data specification: {args.data_spec}")
     result = orchestrator.run(args.data_spec)
