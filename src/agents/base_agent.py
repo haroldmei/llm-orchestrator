@@ -46,18 +46,21 @@ class BaseAgent(ABC):
     def execute(self, **kwargs) -> Any:
         pass
     
-    def call_claude(self, prompt: str, max_tokens: int = 4096) -> str:
+    def call_claude(self, prompt: str, max_tokens: int = 32768) -> str:
         return self.call_llm(prompt, max_tokens)
     
-    def call_llm(self, prompt: str, max_tokens: int = 4096) -> str:
+    def call_llm(self, prompt: str, max_tokens: int = 32768) -> str:
         try:
             if self.provider == "anthropic":
-                response = self.client.messages.create(
+                full_response = ""
+                with self.client.messages.stream(
                     model=self.model,
                     max_tokens=max_tokens,
                     messages=[{"role": "user", "content": prompt}]
-                )
-                return response.content[0].text
+                ) as stream:
+                    for text in stream.text_stream:
+                        full_response += text
+                return full_response
             elif self.provider == "deepseek":
                 response = self.client.chat.completions.create(
                     model=self.model,

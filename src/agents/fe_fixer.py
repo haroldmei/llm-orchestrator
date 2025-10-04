@@ -33,7 +33,7 @@ class FEFixer(BaseAgent):
 
 Please fix the feature specification based on the review comments, following industry best practices."""
         
-        response = self.call_claude(prompt)
+        response = self.call_claude(prompt, max_tokens=32768)
         
         output_path = Path("specs/fe_spec.md")
         output_path.write_text(response, encoding='utf-8')

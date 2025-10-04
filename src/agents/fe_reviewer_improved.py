@@ -27,7 +27,7 @@ The confidence_score must be an integer between 0 and 100."""
             if self.provider == "anthropic":
                 response = self.client.messages.create(
                     model=self.model,
-                    max_tokens=4096,
+                    max_tokens=32768,
                     system=system_prompt,
                     messages=[{"role": "user", "content": prompt}]
                 )
@@ -35,7 +35,7 @@ The confidence_score must be an integer between 0 and 100."""
             elif self.provider == "deepseek":
                 response = self.client.chat.completions.create(
                     model=self.model,
-                    max_tokens=4096,
+                    max_tokens=32768,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt}
