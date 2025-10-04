@@ -30,6 +30,7 @@ class ConfigLoader:
             "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY", ""),
             "deepseek_api_key": os.getenv("DEEPSEEK_API_KEY", ""),
             "model": "deepseek-chat",
+            "max_tokens": 32768,
             "max_iterations": 5,
             "confidence_threshold": 0.9,
             "data_dir": "data",

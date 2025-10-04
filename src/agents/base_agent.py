@@ -12,6 +12,7 @@ class BaseAgent(ABC):
         self.config = config
         self.provider = config.get("provider", "deepseek")
         self.model = config.get("model", "deepseek-chat")
+        self.max_tokens = config.get("max_tokens", 32768)
         
         if self.provider == "anthropic":
             self.api_key = config.get("anthropic_api_key")
@@ -46,10 +47,12 @@ class BaseAgent(ABC):
     def execute(self, **kwargs) -> Any:
         pass
     
-    def call_claude(self, prompt: str, max_tokens: int = 32768) -> str:
+    def call_claude(self, prompt: str, max_tokens: int = None) -> str:
         return self.call_llm(prompt, max_tokens)
     
-    def call_llm(self, prompt: str, max_tokens: int = 32768) -> str:
+    def call_llm(self, prompt: str, max_tokens: int = None) -> str:
+        if max_tokens is None:
+            max_tokens = self.max_tokens
         try:
             if self.provider == "anthropic":
                 full_response = ""

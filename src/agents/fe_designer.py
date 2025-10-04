@@ -25,7 +25,7 @@ class FEDesigner(BaseAgent):
 
 Please design features for a BiLSTM model following industry best practices. Output the feature specification."""
         
-        response = self.call_claude(prompt, max_tokens=32768)
+        response = self.call_claude(prompt)
         
         output_path = Path("specs/fe_spec.md")
         output_path.write_text(response, encoding='utf-8')
