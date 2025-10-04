@@ -33,6 +33,7 @@ jobs:
     - name: Run reviewer pipeline
       env:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       run: |
         python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_spec.md
         

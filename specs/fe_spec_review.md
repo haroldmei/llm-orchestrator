@@ -1,75 +1,81 @@
 ```json
 {
-  "summary_assessment": "Strong feature specification with comprehensive temporal modeling approach for BiLSTM. Good leakage prevention and detailed sequence handling. Minor issues with field normalization dependencies and some implementation details need clarification.",
+  "summary_assessment": "The feature specification demonstrates strong technical foundation with comprehensive feature engineering and appropriate BiLSTM sequence parameters. However, critical issues exist in temporal alignment and leakage prevention that require immediate attention before production deployment.",
   "scores": {
     "completeness": 4,
-    "technical_correctness": 4,
-    "bilstm_suitability": 5,
+    "technical_correctness": 5,
+    "bilstm_suitability": 3,
     "best_practices": 4,
-    "implementation_feasibility": 3,
+    "implementation_feasibility": 4,
     "edge_cases": 4,
     "performance": 4,
-    "leakage_temporal_validity": 5
+    "leakage_temporal_validity": 2
   },
-  "confidence_score_percent": 86,
+  "confidence_score_percent": 75,
   "production_ready": false,
   "issues": [
     {
-      "id": "ISS-009",
-      "criterion": "implementation_feasibility",
+      "id": "ISS-001",
+      "criterion": "leakage_temporal_validity",
+      "severity": "BLOCKER",
+      "section_ref": "FEATURE_SPEC#ball_land_features",
+      "finding": "ball_land_x and ball_land_y are used in derived features but these values represent the actual landing location which is unknown at prediction time (only known in training data).",
+      "recommendation": "Remove ball landing coordinates from features. Use only pre-pass information available at throw time. Consider modeling expected landing location based on QB position, receiver routes, and defensive coverage."
+    },
+    {
+      "id": "ISS-002",
+      "criterion": "bilstm_suitability",
       "severity": "MAJOR",
-      "section_ref": "FEATURE_SPEC#feature_table.field_x_normalized",
-      "finding": "Feature field_x_normalized depends on absolute_yardline_number which is not listed in schema and may not be available in test data",
-      "recommendation": "Either confirm absolute_yardline_number availability in test_input.csv or remove this feature. Add to schema if available."
+      "section_ref": "FEATURE_SPEC#sequence_params",
+      "finding": "Window size of 30 frames (3 seconds) may not align with actual pre-pass sequence lengths. No specification of how sequences are aligned to outcome time t0 (ball release).",
+      "recommendation": "Define alignment policy: sequences should end at frame_id corresponding to ball release. Use variable length sequences up to ball release moment, with padding for shorter sequences."
     },
     {
-      "id": "ISS-010",
+      "id": "ISS-003",
       "criterion": "technical_correctness",
-      "severity": "MINOR",
-      "section_ref": "FEATURE_SPEC#sequence_policy.bucketing",
-      "finding": "Bucketing strategy may create training inefficiency with very small buckets (1-10 frames)",
-      "recommendation": "Consider merging smallest buckets: [1-15], [16-30], [31-45], [46-50] for better batch utilization."
+      "severity": "MAJOR",
+      "section_ref": "FEATURE_SPEC#derived_features",
+      "finding": "Multiple derived features (rel_to_ball_x, dist_to_ball, speed_towards_ball) depend on ball_land_x/y which creates data leakage in training.",
+      "recommendation": "Remove all features derived from ball landing coordinates. Focus on relative positioning to QB, other players, and field landmarks available pre-pass."
     },
     {
-      "id": "ISS-011",
-      "criterion": "implementation_feasibility",
-      "severity": "MINOR",
-      "section_ref": "FEATURE_SPEC#normalization.strategy",
-      "finding": "Mixed normalization strategy (StandardScaler + RobustScaler) may complicate pipeline implementation",
-      "recommendation": "Specify exact logic for applying different scalers to different feature groups or consolidate to one approach."
-    },
-    {
-      "id": "ISS-012",
+      "id": "ISS-004",
       "criterion": "edge_cases",
       "severity": "MINOR",
-      "section_ref": "FEATURE_SPEC#feature_table.ball_angle",
-      "finding": "Ball angle calculation may produce undefined values when player exactly at ball landing position (division by zero in atan2)",
-      "recommendation": "Add epsilon handling: atan2(dy + eps, dx + eps) where eps=1e-8, or handle dx=dy=0 case explicitly."
+      "section_ref": "FEATURE_SPEC#player_position",
+      "finding": "No OOV strategy specified for player_position embedding. Rare positions may not be well-represented.",
+      "recommendation": "Add OOV bucket for positions with frequency < threshold. Consider position grouping for rare roles."
+    },
+    {
+      "id": "ISS-005",
+      "criterion": "implementation_feasibility",
+      "severity": "MINOR",
+      "section_ref": "FEATURE_SPEC#sequence_params",
+      "finding": "No specification of train/validation/test split strategy considering temporal nature of football season data.",
+      "recommendation": "Implement time-based splits by game week to prevent leakage across time. Use earlier weeks for training, later weeks for validation."
     }
   ],
   "strengths": [
-    "Excellent temporal leakage prevention with clear t <= pass_release_time constraint",
-    "Comprehensive BiLSTM sequence policy with proper masking and padding",
-    "Thorough handling of cyclical features (orientation, direction) with sin/cos encoding",
-    "Well-designed validation strategy using time-based splits by NFL weeks",
-    "Detailed dimensionality calculation and memory estimates",
-    "Good coverage of derived features (velocities, rolling statistics, relative positions)",
-    "Proper OOV handling for categorical embeddings with reserved index 0"
+    "Comprehensive feature set covering motion, position, and contextual variables",
+    "Appropriate cyclical encoding for directional features",
+    "Well-documented normalization and outlier handling strategies",
+    "Clear BiLSTM sequence parameters with padding and masking",
+    "Good mix of raw signals and derived temporal features"
   ],
   "areas_for_improvement": [
-    "Verify all referenced fields exist in actual data schema",
-    "Clarify mixed normalization implementation details",
-    "Add epsilon handling for edge cases in geometric calculations",
-    "Consider bucket size optimization for training efficiency",
-    "Add explicit handling for players with identical positions to ball landing"
+    "Eliminate all features dependent on future information (ball landing)",
+    "Define proper temporal alignment between input sequences and prediction targets",
+    "Specify OOV strategies for categorical embeddings",
+    "Implement time-aware data splitting",
+    "Add feature importance analysis to justify dimensionality"
   ],
   "acceptance_checklist": [
-    "All criteria scored and justified ✅",
-    "BiLSTM sequence policy (T/stride/padding/masking) defined ✅",
-    "No future information in features ✅",
-    "Normalization scopes documented ✅",
-    "Time-aware validation/splits specified ✅", 
-    "Recommendations include concrete, actionable fixes ✅"
+    "All criteria scored and justified",
+    "BiLSTM sequence policy (T/stride/padding/masking) defined",
+    "No future information in features",
+    "Normalization scopes documented",
+    "Time-aware validation/splits specified",
+    "Recommendations include concrete, actionable fixes"
   ]
 }
 ```
@@ -77,53 +83,37 @@
 # Feature Engineering Review (BiLSTM)
 
 ## Summary Assessment
-
-This is a well-structured feature specification for NFL player movement prediction using BiLSTM models. The specification demonstrates strong understanding of temporal modeling requirements with excellent leakage prevention measures. The sequence policy is comprehensive with proper masking, padding, and variable-length handling. The feature engineering approach covers essential movement dynamics through position, velocity, acceleration, and relative positioning features.
-
-Key strengths include thorough temporal correctness validation, appropriate cyclical encoding for angular features, and a sensible time-based validation strategy. The dimensionality calculations are clear and the memory estimates are helpful for production planning.
-
-Areas needing attention include verification of field dependencies (absolute_yardline_number), clarification of mixed normalization implementation, and some edge case handling in geometric calculations.
+The feature specification demonstrates strong technical execution with comprehensive coverage of player tracking data and appropriate BiLSTM sequence parameters. However, critical data leakage issues related to ball landing coordinates fundamentally undermine the temporal validity of the approach. The specification requires significant rework to eliminate future information before it can be considered production-ready.
 
 ## Detailed Review by Section
-
-### Data Contract & Schema
-- **FEATURE_SPEC#data_contract** Missing absolute_yardline_number field referenced in field_x_normalized feature → Add to schema or remove dependent feature (MAJOR)
-- **FEATURE_SPEC#data_contract** Schema properly covers all base tracking fields with correct dtypes and units (STRENGTH)
-
-### Sequence Policy  
-- **FEATURE_SPEC#sequence_policy** Excellent BiLSTM-optimized configuration with T=50, proper masking, left-padding strategy (STRENGTH)
-- **FEATURE_SPEC#sequence_policy.bucketing** Small bucket ranges may reduce training efficiency → Consider consolidating to [1-15], [16-30], [31-45], [46-50] (MINOR)
-
-### Feature Engineering
-- **FEATURE_SPEC#feature_table** Comprehensive coverage of movement dynamics with proper temporal derivatives (STRENGTH)  
-- **FEATURE_SPEC#feature_table.ball_angle** Potential atan2 edge case when player exactly at ball position → Add epsilon handling (MINOR)
-- **FEATURE_SPEC#feature_table** Excellent cyclical encoding for orientation/direction features (STRENGTH)
-
-### Normalization Strategy
-- **FEATURE_SPEC#normalization** Mixed StandardScaler/RobustScaler approach needs clearer implementation details → Specify exact feature group assignments (MINOR)
-- **FEATURE_SPEC#normalization.scope** Proper global fit on training data only prevents leakage (STRENGTH)
-
-### Temporal Validity
-- **FEATURE_SPEC#leakage_analysis** Thorough analysis with clear t <= pass_release_time constraint enforcement (STRENGTH)
-- **FEATURE_SPEC#validation_policy** Time-based weekly splits properly prevent temporal leakage (STRENGTH)
+- [FEATURE_SPEC#ball_land_features] Uses ball landing coordinates which represent future information not available at prediction time → Remove all features derived from ball landing coordinates (BLOCKER)
+- [FEATURE_SPEC#sequence_params] Window alignment to outcome time t0 not clearly defined → Align sequences to end at ball release frame with variable length sequences (MAJOR)
+- [FEATURE_SPEC#derived_features] Multiple features depend on leaked ball landing information → Replace with pre-pass relative positioning features (MAJOR)
+- [FEATURE_SPEC#player_position] No OOV strategy for categorical embeddings → Add OOV bucket and consider position grouping (MINOR)
+- [FEATURE_SPEC#sequence_params] No temporal split strategy specified → Implement time-based splits by game week (MINOR)
 
 ## Strengths
-- Rigorous temporal leakage prevention with comprehensive analysis
-- BiLSTM-optimized sequence handling with proper masking and variable lengths  
-- Thoughtful feature engineering covering movement dynamics and spatial relationships
-- Clear dimensionality calculations and implementation guidance
-- Proper handling of cyclical features and categorical embeddings
-- Well-designed validation strategy using temporal splits
+- Comprehensive coverage of player motion and positional data
+- Appropriate cyclical encoding for directional features (orientation, direction)
+- Well-documented normalization strategies with proper train-only fitting
+- Clear BiLSTM sequence parameters with padding and masking support
+- Good mix of raw signals and meaningful derived temporal features
 
 ## Areas for Improvement
-- Verify all referenced schema fields exist in actual dataset
-- Clarify mixed normalization implementation approach
-- Add robust edge case handling for geometric calculations
-- Optimize bucketing strategy for training efficiency
-- Confirm test-time availability of contextual fields
+- Critical need to eliminate all features dependent on ball landing coordinates
+- Better definition of temporal alignment between input sequences and prediction targets
+- Specification of OOV handling for categorical variables
+- Implementation of time-aware data splitting strategy
+- Feature importance analysis to justify the current dimensionality
 
 ## Production Readiness
-- **CONFIDENCE_SCORE: 86%**
-- **Verdict: Needs Fixes ❌**
+- CONFIDENCE_SCORE: 75%
+- Verdict: Needs Fixes ❌
 
-The specification is strong but requires resolution of the schema dependency issue and clarification of implementation details before production deployment. The core temporal modeling approach is sound and the feature engineering is comprehensive.
+**Critical Path to Production:**
+1. Immediately remove all ball landing coordinate features and their derivatives
+2. Redesign features using only information available at ball release
+3. Implement proper temporal alignment and splitting
+4. Retest for leakage and temporal validity
+
+CONFIDENCE_SCORE: 75%
