@@ -35,7 +35,7 @@ Please fix the feature specification based on the review comments, following ind
         
         response = self.call_claude(prompt, max_tokens=32768)
         
-        output_path = Path("specs/fe_spec.md")
+        output_path = Path("specs/fe_spec_review_fixer.md")
         output_path.write_text(response, encoding='utf-8')
         self.logger.info(f"Updated feature specification saved to: {output_path}")
         
