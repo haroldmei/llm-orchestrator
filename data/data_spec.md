@@ -1,3 +1,5 @@
+# NFL Big Data Bowl 2026 - Prediction
+
 ## Description
 Note: This Big Data Bowl 2026 has two competitions. This competition is the Prediction competition. Learn more about the Analytics competition here.
 
