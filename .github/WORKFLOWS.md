@@ -23,7 +23,6 @@ Three automated workflows for orchestrating feature engineering spec generation 
 3. Generates:
    - `specs/fe_spec.md` (initial design)
    - `specs/fe_spec_review.md` (review feedback)
-   - `specs/fe_spec_final.md` (fixed version)
 4. Creates PR with generated specs
 
 **Usage:**
@@ -49,7 +48,6 @@ git push
 2. Runs reviewer pipeline: Reviewer → Fixer
 3. Generates:
    - `specs/fe_spec_review.md` (review)
-   - `specs/fe_spec_final.md` (improved version)
 4. Creates PR with review results
 
 **Usage:**
@@ -82,7 +80,7 @@ Via GitHub UI:
 1. Go to Actions → "Compare and Merge Specs"
 2. Click "Run workflow"
 3. Configure:
-   - **Source file:** `specs/fe_spec_final.md` or `specs/fe_spec_review.md`
+   - **Source file:** `specs/fe_spec_review.md`
    - **Target file:** `specs/fe_spec.md`
    - **Auto merge:** `true` (direct merge) or `false` (create PR)
 4. Click "Run workflow"
@@ -90,7 +88,7 @@ Via GitHub UI:
 Via GitHub CLI:
 ```bash
 gh workflow run compare-and-merge.yml \
-  -f source_file=specs/fe_spec_final.md \
+  -f source_file=specs/fe_spec_review.md \
   -f target_file=specs/fe_spec.md \
   -f auto_merge=false
 ```
@@ -185,10 +183,10 @@ Result:
 
 ### Scenario 3: Accept Reviewed Spec
 
-1. Previous workflows completed, `fe_spec_final.md` exists
+1. Previous workflows completed, `fe_spec_review.md` exists
 2. Go to Actions → "Compare and Merge Specs"
 3. Run workflow:
-   - Source: `specs/fe_spec_final.md`
+   - Source: `specs/fe_spec_review.md`
    - Target: `specs/fe_spec.md`
    - Auto merge: `false`
 4. Review comparison report in artifacts
@@ -220,8 +218,8 @@ python main.py --data-spec data/data_spec.md
 python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_spec.md
 
 # Compare and merge locally
-python scripts/compare_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
-python scripts/merge_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+python scripts/compare_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
+python scripts/merge_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
 ```
 
 ## Troubleshooting

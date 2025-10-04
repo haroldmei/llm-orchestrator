@@ -116,7 +116,7 @@ Input: data_spec.md
 ╚═══════════════════════════════════════════╝
       │
       ▼
-Output: fe_spec_final.md
+Output: fe_spec_review.md
 ```
 
 ## Configuration

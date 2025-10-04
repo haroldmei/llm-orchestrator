@@ -99,7 +99,7 @@ Reply ONLY with: CONFIDENCE_SCORE: XX%"""
         self.logger.info(f"Review saved with confidence: {confidence_score:.0%}")
         
         if confidence_score >= self.config.get("confidence_threshold", 0.9):
-            final_path = Path("specs/fe_spec_final.md")
+            final_path = Path("specs/fe_spec_review.md")
             final_path.write_text(Path(fe_spec_path).read_text(encoding='utf-8'), encoding='utf-8')
             self.logger.info(f"Final specification saved to: {final_path}")
         

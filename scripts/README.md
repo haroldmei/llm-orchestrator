@@ -15,14 +15,14 @@ python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_
 Generate a comparison report between two specification files.
 
 ```bash
-python scripts/compare_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md --output comparison_report.md
+python scripts/compare_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md --output comparison_report.md
 ```
 
 ### `merge_specs.py`
 Merge specifications with backup and confirmation.
 
 ```bash
-python scripts/merge_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+python scripts/merge_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
 ```
 
 Add `--force` to skip confirmation prompts (use in automation).
@@ -63,8 +63,8 @@ python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_
 
 3. **Compare and merge manually:**
 ```bash
-python scripts/compare_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
-python scripts/merge_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+python scripts/compare_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
+python scripts/merge_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
 ```
 
 ### GitHub Actions

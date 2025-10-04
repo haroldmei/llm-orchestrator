@@ -82,7 +82,7 @@ Automated CI/CD pipelines for spec generation and review:
 
 ### 3. Compare and Merge
 **Trigger:** Manual workflow dispatch
-- Compare `fe_spec_final.md` and `fe_spec.md`
+- Compare `fe_spec_review.md` and `fe_spec.md`
 - Option to auto-merge or create PR
 
 **Setup:**
@@ -98,10 +98,10 @@ See [scripts/README.md](scripts/README.md) for detailed workflow documentation.
 python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_spec.md
 
 # Compare specs
-python scripts/compare_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+python scripts/compare_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
 
 # Merge specs (with backup and confirmation)
-python scripts/merge_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+python scripts/merge_specs.py --source specs/fe_spec_review.md --target specs/fe_spec.md
 ```
 
 ## Development

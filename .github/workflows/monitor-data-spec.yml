@@ -44,12 +44,11 @@ jobs:
         path: |
           specs/fe_spec.md
           specs/fe_spec_review.md
-          specs/fe_spec_final.md
           logs/
         retention-days: 30
         
     - name: Create Pull Request
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main'
       uses: peter-evans/create-pull-request@v6
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -65,7 +64,6 @@ jobs:
           ### Generated Files:
           - `specs/fe_spec.md` - Initial feature specification
           - `specs/fe_spec_review.md` - Review feedback
-          - `specs/fe_spec_final.md` - Final reviewed specification
           
           ### Pipeline Details:
           - Triggered by: data_spec.md changes

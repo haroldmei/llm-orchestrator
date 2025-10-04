@@ -6,11 +6,7 @@ on:
       source_file:
         description: 'Source file to merge from'
         required: true
-        default: 'specs/fe_spec_final.md'
-        type: choice
-        options:
-          - specs/fe_spec_final.md
-          - specs/fe_spec_review.md
+        default: 'specs/fe_spec_review.md'
       target_file:
         description: 'Target file to merge into'
         required: true

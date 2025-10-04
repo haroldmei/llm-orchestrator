@@ -119,7 +119,7 @@
 │                    Final Output                             │
 │                                                             │
 │  IF confidence ≥ 90%:                                       │
-│    ✓ specs/fe_spec_final.md                                │
+│    ✓ specs/fe_spec_review.md                                │
 │    ✓ Status: SUCCESS                                       │
 │                                                             │
 │  IF max iterations reached:                                │
@@ -147,7 +147,7 @@
 ## Convergence Criteria
 
 1. **Success Case**: `confidence_score >= 0.9`
-   - Final spec written to `fe_spec_final.md`
+   - Final spec written to `fe_spec_review.md`
    - Pipeline terminates successfully
 
 2. **Max Iterations**: `iteration >= 5`
@@ -162,7 +162,7 @@ data_spec.md (immutable)
     ├──► fe_spec.md (v1) ──► fe_spec.md (v2) ──► ... ──► fe_spec.md (vN)
     │                                                          │
     │                                                          ▼
-    └──────────────────────────────────────────────► fe_spec_final.md
+    └──────────────────────────────────────────────► fe_spec_review.md
 
 Reviews: fe_spec_review.md (updated each iteration)
 ```

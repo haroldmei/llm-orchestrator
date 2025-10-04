@@ -73,7 +73,7 @@ class FeatureEngineeringOrchestrator:
                     "status": "success",
                     "iterations": iteration + 1,
                     "confidence_score": confidence_score,
-                    "final_spec": "specs/fe_spec_final.md"
+                    "final_spec": "specs/fe_spec_review.md"
                 }
             
             self.logger.info("Fixing feature specification")

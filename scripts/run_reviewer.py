@@ -83,7 +83,7 @@ def main():
             review_path="specs/fe_spec_review.md",
             data_spec_path=args.data_spec
         )
-        logger.info("Fixed specification saved to: specs/fe_spec_final.md")
+        logger.info("Fixed specification saved to: specs/fe_spec_review.md")
     else:
         logger.info("Confidence threshold met. No fixes needed.")
 
