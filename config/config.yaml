@@ -1,0 +1,13 @@
+model: claude-sonnet-4-20250514
+
+max_iterations: 5
+confidence_threshold: 0.9
+
+data_dir: data
+specs_dir: specs
+logs_dir: logs
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
