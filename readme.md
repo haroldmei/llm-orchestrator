@@ -66,6 +66,44 @@ reviewer_type: robust           # "default", "robust", or "structured"
 
 Switch providers by updating the `provider` and `model` fields in `config.yaml`.
 
+## GitHub Workflows
+
+Automated CI/CD pipelines for spec generation and review:
+
+### 1. Monitor Data Spec
+**Trigger:** Changes to `data/data_spec.md`
+- Runs full pipeline (Designer → Reviewer → Fixer)
+- Creates PR with generated specs
+
+### 2. Monitor FE Spec
+**Trigger:** Changes to `specs/fe_spec.md`
+- Runs reviewer pipeline
+- Creates PR with review results
+
+### 3. Compare and Merge
+**Trigger:** Manual workflow dispatch
+- Compare `fe_spec_final.md` and `fe_spec.md`
+- Option to auto-merge or create PR
+
+**Setup:**
+1. Add `ANTHROPIC_API_KEY` secret to GitHub repository
+2. Enable Actions with write permissions
+
+See [scripts/README.md](scripts/README.md) for detailed workflow documentation.
+
+## Helper Scripts
+
+```bash
+# Run reviewer only
+python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_spec.md
+
+# Compare specs
+python scripts/compare_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+
+# Merge specs (with backup and confirmation)
+python scripts/merge_specs.py --source specs/fe_spec_final.md --target specs/fe_spec.md
+```
+
 ## Development
 
 ```bash

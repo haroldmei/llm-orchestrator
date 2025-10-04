@@ -1,0 +1,76 @@
+name: Monitor FE Spec
+
+on:
+  push:
+    paths:
+      - 'specs/fe_spec.md'
+  pull_request:
+    paths:
+      - 'specs/fe_spec.md'
+  workflow_dispatch:
+
+jobs:
+  run-reviewer-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Create required directories
+      run: |
+        mkdir -p logs specs data
+        
+    - name: Run reviewer pipeline
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        python scripts/run_reviewer.py --fe-spec specs/fe_spec.md --data-spec data/data_spec.md
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: review-results
+        path: |
+          specs/fe_spec_review.md
+          specs/fe_spec_final.md
+          logs/
+        retention-days: 30
+        
+    - name: Create Pull Request
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'feat: Review and update feature specs'
+        branch: auto/review-fe-specs
+        delete-branch: true
+        title: 'Auto-generated: Feature Spec Review'
+        body: |
+          ## Automated Feature Spec Review
+          
+          This PR contains automatically reviewed feature specifications based on changes to `specs/fe_spec.md`.
+          
+          ### Generated Files:
+          - `specs/fe_spec_review.md` - Review feedback and suggestions
+          - `specs/fe_spec_final.md` - Reviewed/fixed specification
+          
+          ### Pipeline Details:
+          - Triggered by: fe_spec.md changes
+          - Started from: Reviewer agent
+          - Workflow: Reviewer → Fixer
+          
+          Please review the suggestions before merging.
+        labels: |
+          automated
+          review
+

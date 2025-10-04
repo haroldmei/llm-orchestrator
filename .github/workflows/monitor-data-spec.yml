@@ -1,0 +1,78 @@
+name: Monitor Data Spec
+
+on:
+  push:
+    paths:
+      - 'data/data_spec.md'
+  pull_request:
+    paths:
+      - 'data/data_spec.md'
+  workflow_dispatch:
+
+jobs:
+  run-designer-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        
+    - name: Create required directories
+      run: |
+        mkdir -p logs specs data
+        
+    - name: Run designer pipeline
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        python main.py --data-spec data/data_spec.md --config config/config.yaml
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-specs
+        path: |
+          specs/fe_spec.md
+          specs/fe_spec_review.md
+          specs/fe_spec_final.md
+          logs/
+        retention-days: 30
+        
+    - name: Create Pull Request
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'feat: Update feature specs from data_spec changes'
+        branch: auto/update-fe-specs
+        delete-branch: true
+        title: 'Auto-generated: Feature Specs Update'
+        body: |
+          ## Automated Feature Spec Generation
+          
+          This PR contains automatically generated feature specifications based on changes to `data/data_spec.md`.
+          
+          ### Generated Files:
+          - `specs/fe_spec.md` - Initial feature specification
+          - `specs/fe_spec_review.md` - Review feedback
+          - `specs/fe_spec_final.md` - Final reviewed specification
+          
+          ### Pipeline Details:
+          - Triggered by: data_spec.md changes
+          - Started from: Designer agent
+          - Workflow: Designer → Reviewer → Fixer
+          
+          Please review the generated specifications before merging.
+        labels: |
+          automated
+          feature-engineering
+
