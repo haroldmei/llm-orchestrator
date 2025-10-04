@@ -1,383 +1,375 @@
-## Feature Specification Table
+## Feature Map
 
-| Name | Source | Intent | Type | Transform Pipeline | Outlier Policy | Per-Seq Norm? | Leakage Risk | Dtype | Timestep Dim |
-|------|--------|--------|------|-------------------|----------------|---------------|--------------|-------|-------------|
-| player_x | input.x | Signal | Continuous | ffill→none→standard | IQR capping | Yes | Low | float32 | 1 |
-| player_y | input.y | Signal | Continuous | ffill→none→standard | IQR capping | Yes | Low | float32 | 1 |
-| player_speed | input.s | Signal | Continuous | ffill→none→robust | Quantile [0.01,0.99] | Yes | Low | float32 | 1 |
-| player_accel | input.a | Signal | Continuous | ffill→none→robust | Quantile [0.01,0.99] | Yes | Low | float32 | 1 |
-| player_orientation | input.o | Signal | Continuous | ffill→cyclic→none | None | Yes | Low | float32 | 2 |
-| player_direction | input.dir | Signal | Continuous | ffill→cyclic→none | None | Yes | Low | float32 | 2 |
-| ball_land_x | input.ball_land_x | Context | Continuous | median→none→minmax | None | No | Low | float32 | 1 |
-| ball_land_y | input.ball_land_y | Context | Continuous | median→none→minmax | None | No | Low | float32 | 1 |
-| player_position | input.player_position | Context | Categorical | mode→embedding→none | None | No | Low | int64 | 8 |
-| player_role | input.player_role | Context | Categorical | mode→one_hot→none | None | No | Low | int64 | 4 |
-| player_side | input.player_side | Context | Categorical | mode→one_hot→none | None | No | Low | int64 | 2 |
-| play_direction | input.play_direction | Context | Categorical | mode→one_hot→none | None | No | Low | int64 | 2 |
-| rel_to_ball_x | player_x, ball_land_x | Derived | Continuous | ffill→none→standard | IQR capping | Yes | Low | float32 | 1 |
-| rel_to_ball_y | player_y, ball_land_y | Derived | Continuous | ffill→none→standard | IQR capping | Yes | Low | float32 | 1 |
-| dist_to_ball | player_x, player_y, ball_land_x, ball_land_y | Derived | Continuous | ffill→none→robust | Quantile [0.01,0.99] | Yes | Low | float32 | 1 |
-| speed_towards_ball | player_speed, player_direction, ball_land_x, ball_land_y | Derived | Continuous | ffill→none→robust | Quantile [0.01,0.99] | Yes | Low | float32 | 1 |
-| speed_rolling_mean_5 | player_speed | Derived | Continuous | ffill→none→robust | Quantile [0.01,0.99] | Yes | Low | float32 | 1 |
-| accel_rolling_std_3 | player_accel | Derived | Continuous | ffill→none→robust | Quantile [0.01,0.99] | Yes | Low | float32 | 1 |
-| x_lag_1 | player_x | Derived | Continuous | ffill→none→standard | IQR capping | Yes | Low | float32 | 1 |
-| y_lag_1 | player_y | Derived | Continuous | ffill→none→standard | IQR capping | Yes | Low | float32 | 1 |
-| frame_id_normalized | input.frame_id | Time | Continuous | none→none→minmax | None | No | Low | float32 | 1 |
+| name | source | intent | type | transform pipeline | outlier policy | per-seq norm? | leakage risk | dtype | timestep_dim |
+|------|--------|--------|------|-------------------|----------------|---------------|--------------|-------|--------------|
+| x_pos | x | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| y_pos | y | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| speed | s | signal | continuous | mean→none→robust | quantile[0.01,0.99] | false | false | float32 | 1 |
+| acceleration | a | signal | continuous | mean→none→robust | quantile[0.01,0.99] | false | false | float32 | 1 |
+| orientation | o | signal | continuous | mean→none→none | none | false | false | float32 | 2 |
+| direction | dir | signal | continuous | mean→none→none | none | false | false | float32 | 2 |
+| player_position | player_position | context | categorical | mode→embedding→none | none | false | false | float32 | 8 |
+| player_side | player_side | context | categorical | mode→one_hot→none | none | false | false | float32 | 2 |
+| player_role | player_role | context | categorical | mode→embedding→none | none | false | false | float32 | 6 |
+| play_direction | play_direction | context | categorical | mode→one_hot→none | none | false | false | float32 | 2 |
+| absolute_yardline | absolute_yardline_number | context | continuous | mean→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| ball_land_x | ball_land_x | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| ball_land_y | ball_land_y | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| x_velocity | x,frame_id | signal | continuous | none→none→robust | quantile[0.01,0.99] | false | false | float32 | 1 |
+| y_velocity | y,frame_id | signal | continuous | none→none→robust | quantile[0.01,0.99] | false | false | float32 | 1 |
+| dist_to_ball_land | x,y,ball_land_x,ball_land_y | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| x_lag1 | x | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| y_lag1 | y | signal | continuous | none→none→standard | quantile[0.01,0.99] | false | false | float32 | 1 |
+| speed_roll3 | s | signal | continuous | mean→none→robust | quantile[0.01,0.99] | false | false | float32 | 1 |
+| accel_roll3 | a | signal | continuous | mean→none→robust | quantile[0.01,0.99] | false | false | float32 | 1 |
 
-## Derived Features (Equations)
-
-**Relative to Ball Landing:**
-- `rel_to_ball_x = player_x - ball_land_x`
-- `rel_to_ball_y = player_y - ball_land_y`
-- `dist_to_ball = sqrt((player_x - ball_land_x)² + (player_y - ball_land_y)²)`
-
-**Speed Towards Ball:**
-- `angle_to_ball = atan2(ball_land_y - player_y, ball_land_x - player_x)`
-- `speed_towards_ball = player_speed * cos(player_direction_rad - angle_to_ball)`
+## Derived Features
 
 **Temporal Features:**
-- `speed_rolling_mean_5 = mean(player_speed over 5 frames)`
-- `accel_rolling_std_3 = std(player_accel over 3 frames)`
-- `x_lag_1 = player_x at t-1`
-- `y_lag_1 = player_y at t-1`
+- `x_velocity = (x_t - x_{t-1}) / 0.1` (10 fps → 0.1s intervals)
+- `y_velocity = (y_t - y_{t-1}) / 0.1`
+- `x_lag1 = x_{t-1}`, `y_lag1 = y_{t-1}`
+- `speed_roll3 = rolling_mean(s, window=3)`
+- `accel_roll3 = rolling_mean(a, window=3)`
 
-**Cyclical Encoding:**
-- `player_orientation_sin = sin(2π * player_orientation / 360)`
-- `player_orientation_cos = cos(2π * player_orientation / 360)`
-- `player_direction_sin = sin(2π * player_direction / 360)`
-- `player_direction_cos = cos(2π * player_direction / 360)`
+**Spatial Features:**
+- `dist_to_ball_land = sqrt((x - ball_land_x)² + (y - ball_land_y)²)`
 
-## JSON Output
+**Angular Encoding:**
+- `orientation`: [sin(o * π/180), cos(o * π/180)]
+- `direction`: [sin(dir * π/180), cos(dir * π/180)]
+
+## Normalization & Encoding
+
+**Continuous Features:** Standard/Robust scaling with [0.01, 0.99] quantile clipping
+**Categorical Encoding:**
+- Low cardinality (<5): one-hot encoding
+- High cardinality: embedding with dim = min(50, round(1.6 * cardinality^0.56))
+- Rare category threshold: <0.5% frequency → "OTHER"
+
+**Global normalization** chosen over per-sequence to maintain consistent field coordinate interpretation across plays.
+
+## Sequence Processing
+
+- **Resampling:** Forward fill for gaps ≤0.2s (2 frames)
+- **Window:** Variable length based on input frames (typically 20-50 frames pre-pass)
+- **Padding:** Pre-padding with mask_value=-999
+- **Max length:** 60 frames (6 seconds max pre-pass tracking)
 
 ```json
 {
   "sequence_params": {
     "sampling_rate_hz": 10,
-    "resampling": {"method": "forward_fill", "max_gap_s": 0.5},
-    "window_size": {"unit": "steps", "value": 30},
+    "resampling": {"method": "forward_fill", "max_gap_s": 0.2},
+    "window_size": {"unit": "steps", "value": 60},
     "stride": {"unit": "steps", "value": 1},
-    "padding": {"side": "pre", "value": 0.0},
-    "max_seq_len": 30,
-    "mask_value": -999.0,
+    "padding": {"side": "pre", "value": -999},
+    "max_seq_len": 60,
+    "mask_value": -999,
     "bucket_by_length": true
   },
   "features": [
     {
-      "name": "player_x",
-      "source": ["input.x"],
+      "name": "x_pos",
+      "source": ["x"],
       "intent": "signal",
       "type": "continuous",
       "derived": "none",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.05, 0.95]}},
-      "outliers": {"method": "iqr", "params": {"factor": 1.5}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Pre-pass tracking data only"},
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pre-pass position data"},
       "dtype": "float32",
       "timestep_dim": 1
     },
     {
-      "name": "player_y",
-      "source": ["input.y"],
+      "name": "y_pos",
+      "source": ["y"],
       "intent": "signal",
       "type": "continuous",
       "derived": "none",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.05, 0.95]}},
-      "outliers": {"method": "iqr", "params": {"factor": 1.5}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Pre-pass tracking data only"},
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pre-pass position data"},
       "dtype": "float32",
       "timestep_dim": 1
     },
     {
-      "name": "player_speed",
-      "source": ["input.s"],
+      "name": "speed",
+      "source": ["s"],
       "intent": "signal",
       "type": "continuous",
       "derived": "none",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
       "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
-      "outliers": {"method": "quantile", "params": {"low_q": 0.01, "high_q": 0.99}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Pre-pass tracking data only"},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pre-pass speed data"},
       "dtype": "float32",
       "timestep_dim": 1
     },
     {
-      "name": "player_accel",
-      "source": ["input.a"],
+      "name": "acceleration",
+      "source": ["a"],
       "intent": "signal",
       "type": "continuous",
       "derived": "none",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
       "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
-      "outliers": {"method": "quantile", "params": {"low_q": 0.01, "high_q": 0.99}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Pre-pass tracking data only"},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pre-pass acceleration data"},
       "dtype": "float32",
       "timestep_dim": 1
     },
     {
-      "name": "player_orientation",
-      "source": ["input.o"],
+      "name": "orientation",
+      "source": ["o"],
       "intent": "signal",
       "type": "continuous",
-      "derived": "sin_cos_encoding",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 2}},
-      "scaling": {"method": "none", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
+      "derived": "[sin(o * π/180), cos(o * π/180)]",
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "none", "fit": "train_only", "params": {}},
       "outliers": {"method": "none", "params": {}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Pre-pass tracking data only"},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pre-pass orientation data"},
       "dtype": "float32",
       "timestep_dim": 2
     },
     {
-      "name": "player_direction",
-      "source": ["input.dir"],
+      "name": "direction",
+      "source": ["dir"],
       "intent": "signal",
       "type": "continuous",
-      "derived": "sin_cos_encoding",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 2}},
-      "scaling": {"method": "none", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
+      "derived": "[sin(dir * π/180), cos(dir * π/180)]",
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "none", "fit": "train_only", "params": {}},
       "outliers": {"method": "none", "params": {}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Pre-pass tracking data only"},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pre-pass direction data"},
       "dtype": "float32",
       "timestep_dim": 2
-    },
-    {
-      "name": "ball_land_x",
-      "source": ["input.ball_land_x"],
-      "intent": "context",
-      "type": "continuous",
-      "derived": "none",
-      "imputation": {"method": "median", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "minmax", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
-      "outliers": {"method": "none", "params": {}},
-      "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Known at pass release"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "ball_land_y",
-      "source": ["input.ball_land_y"],
-      "intent": "context",
-      "type": "continuous",
-      "derived": "none",
-      "imputation": {"method": "median", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "minmax", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
-      "outliers": {"method": "none", "params": {}},
-      "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Known at pass release"},
-      "dtype": "float32",
-      "timestep_dim": 1
     },
     {
       "name": "player_position",
-      "source": ["input.player_position"],
+      "source": ["player_position"],
       "intent": "context",
       "type": "categorical",
       "derived": "none",
       "imputation": {"method": "mode", "params": {}},
       "encoding": {"method": "embedding", "params": {"dim": 8}},
-      "scaling": {"method": "none", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
+      "scaling": {"method": "none", "fit": "train_only", "params": {}},
       "outliers": {"method": "none", "params": {}},
       "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Static player attribute"},
-      "dtype": "int64",
+      "leakage_risk": {"flag": false, "note": "static player attribute"},
+      "dtype": "float32",
       "timestep_dim": 8
     },
     {
-      "name": "player_role",
-      "source": ["input.player_role"],
+      "name": "player_side",
+      "source": ["player_side"],
       "intent": "context",
       "type": "categorical",
       "derived": "none",
       "imputation": {"method": "mode", "params": {}},
-      "encoding": {"method": "one_hot", "params": {"dim": 4}},
-      "scaling": {"method": "none", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
+      "encoding": {"method": "one_hot", "params": {}},
+      "scaling": {"method": "none", "fit": "train_only", "params": {}},
       "outliers": {"method": "none", "params": {}},
       "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Known role assignment"},
-      "dtype": "int64",
-      "timestep_dim": 4
+      "leakage_risk": {"flag": false, "note": "static player attribute"},
+      "dtype": "float32",
+      "timestep_dim": 2
     },
     {
-      "name": "player_side",
-      "source": ["input.player_side"],
+      "name": "player_role",
+      "source": ["player_role"],
       "intent": "context",
       "type": "categorical",
       "derived": "none",
       "imputation": {"method": "mode", "params": {}},
-      "encoding": {"method": "one_hot", "params": {"dim": 2}},
-      "scaling": {"method": "none", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
+      "encoding": {"method": "embedding", "params": {"dim": 6}},
+      "scaling": {"method": "none", "fit": "train_only", "params": {}},
       "outliers": {"method": "none", "params": {}},
       "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Team assignment"},
-      "dtype": "int64",
-      "timestep_dim": 2
+      "leakage_risk": {"flag": false, "note": "play-specific role assignment"},
+      "dtype": "float32",
+      "timestep_dim": 6
     },
     {
       "name": "play_direction",
-      "source": ["input.play_direction"],
+      "source": ["play_direction"],
       "intent": "context",
       "type": "categorical",
       "derived": "none",
       "imputation": {"method": "mode", "params": {}},
-      "encoding": {"method": "one_hot", "params": {"dim": 2}},
-      "scaling": {"method": "none", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
+      "encoding": {"method": "one_hot", "params": {}},
+      "scaling": {"method": "none", "fit": "train_only", "params": {}},
       "outliers": {"method": "none", "params": {}},
       "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Play context"},
-      "dtype": "int64",
+      "leakage_risk": {"flag": false, "note": "play context known pre-pass"},
+      "dtype": "float32",
       "timestep_dim": 2
     },
     {
-      "name": "rel_to_ball_x",
-      "source": ["player_x", "ball_land_x"],
-      "intent": "derived",
+      "name": "absolute_yardline",
+      "source": ["absolute_yardline_number"],
+      "intent": "context",
       "type": "continuous",
-      "derived": "player_x - ball_land_x",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.05, 0.95]}},
-      "outliers": {"method": "iqr", "params": {"factor": 1.5}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Derived from pre-pass data"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "rel_to_ball_y",
-      "source": ["player_y", "ball_land_y"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "player_y - ball_land_y",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.05, 0.95]}},
-      "outliers": {"method": "iqr", "params": {"factor": 1.5}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Derived from pre-pass data"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "dist_to_ball",
-      "source": ["player_x", "player_y", "ball_land_x", "ball_land_y"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "sqrt((player_x - ball_land_x)^2 + (player_y - ball_land_y)^2)",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
-      "outliers": {"method": "quantile", "params": {"low_q": 0.01, "high_q": 0.99}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Derived from pre-pass data"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "speed_towards_ball",
-      "source": ["player_speed", "player_direction", "ball_land_x", "ball_land_y"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "player_speed * cos(player_direction_rad - angle_to_ball)",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
-      "outliers": {"method": "quantile", "params": {"low_q": 0.01, "high_q": 0.99}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Derived from pre-pass data"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "speed_rolling_mean_5",
-      "source": ["player_speed"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "rolling_mean(window=5)",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
-      "outliers": {"method": "quantile", "params": {"low_q": 0.01, "high_q": 0.99}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Only uses past information"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "accel_rolling_std_3",
-      "source": ["player_accel"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "rolling_std(window=3)",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
-      "outliers": {"method": "quantile", "params": {"low_q": 0.01, "high_q": 0.99}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Only uses past information"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "x_lag_1",
-      "source": ["player_x"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "lag(1)",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.05, 0.95]}},
-      "outliers": {"method": "iqr", "params": {"factor": 1.5}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Only uses past information"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "y_lag_1",
-      "source": ["player_y"],
-      "intent": "derived",
-      "type": "continuous",
-      "derived": "lag(1)",
-      "imputation": {"method": "ffill", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.05, 0.95]}},
-      "outliers": {"method": "iqr", "params": {"factor": 1.5}},
-      "per_sequence_normalization": true,
-      "leakage_risk": {"flag": false, "note": "Only uses past information"},
-      "dtype": "float32",
-      "timestep_dim": 1
-    },
-    {
-      "name": "frame_id_normalized",
-      "source": ["input.frame_id"],
-      "intent": "time",
-      "type": "continuous",
-      "derived": "normalized_by_max_frame",
-      "imputation": {"method": "none", "params": {}},
-      "encoding": {"method": "none", "params": {"dim": 1}},
-      "scaling": {"method": "minmax", "fit": "train_only", "params": {"clip_q": [0.0, 1.0]}},
-      "outliers": {"method": "none", "params": {}},
+      "derived": "none",
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
       "per_sequence_normalization": false,
-      "leakage_risk": {"flag": false, "note": "Temporal context only"},
+      "leakage_risk": {"flag": false, "note": "field position context"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "ball_land_x",
+      "source": ["ball_land_x"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "none",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pass target provided as input"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "ball_land_y",
+      "source": ["ball_land_y"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "none",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "pass target provided as input"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "x_velocity",
+      "source": ["x"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "(x_t - x_{t-1}) / 0.1",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "derived from pre-pass positions"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "y_velocity",
+      "source": ["y"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "(y_t - y_{t-1}) / 0.1",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "derived from pre-pass positions"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "dist_to_ball_land",
+      "source": ["x", "y", "ball_land_x", "ball_land_y"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "sqrt((x - ball_land_x)² + (y - ball_land_y)²)",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "distance to known target location"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "x_lag1",
+      "source": ["x"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "x_{t-1}",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "lagged position feature"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "y_lag1",
+      "source": ["y"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "y_{t-1}",
+      "imputation": {"method": "none", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "standard", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "lagged position feature"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "speed_roll3",
+      "source": ["s"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "rolling_mean(s, window=3)",
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "rolling average of speed"},
+      "dtype": "float32",
+      "timestep_dim": 1
+    },
+    {
+      "name": "accel_roll3",
+      "source": ["a"],
+      "intent": "signal",
+      "type": "continuous",
+      "derived": "rolling_mean(a, window=3)",
+      "imputation": {"method": "mean", "params": {}},
+      "encoding": {"method": "none", "params": {}},
+      "scaling": {"method": "robust", "fit": "train_only", "params": {"clip_q": [0.01, 0.99]}},
+      "outliers": {"method": "quantile", "params": {"lower": 0.01, "upper": 0.99}},
+      "per_sequence_normalization": false,
+      "leakage_risk": {"flag": false, "note": "rolling average of acceleration"},
       "dtype": "float32",
       "timestep_dim": 1
     }
   ],
-  "final_dimensions": {"per_timestep": 32, "tensor": "(B,T,32)"}
+  "final_dimensions": {"per_timestep": 34, "tensor": "(B,T,34)"}
 }
 ```
