@@ -1,73 +1,89 @@
 ```json
 {
-  "summary_assessment": "The feature specification demonstrates strong technical foundation with comprehensive feature engineering and appropriate BiLSTM sequence parameters. However, critical issues exist in temporal alignment and leakage prevention that require immediate attention before production deployment.",
+  "summary_assessment": "The feature specification demonstrates strong technical foundations with comprehensive signal processing and derived features. However, critical issues exist in temporal alignment, sequence policy definition, and validation strategy that prevent production readiness. The specification correctly identifies pre-pass data boundaries but lacks clear alignment between input sequences and prediction targets.",
   "scores": {
     "completeness": 4,
-    "technical_correctness": 5,
-    "bilstm_suitability": 3,
-    "best_practices": 4,
-    "implementation_feasibility": 4,
-    "edge_cases": 4,
+    "technical_correctness": 4,
+    "bilstm_suitability": 2,
+    "best_practices": 3,
+    "implementation_feasibility": 3,
+    "edge_cases": 3,
     "performance": 4,
     "leakage_temporal_validity": 2
   },
-  "confidence_score_percent": 75,
+  "confidence_score_percent": 68,
   "production_ready": false,
   "issues": [
     {
       "id": "ISS-001",
-      "criterion": "leakage_temporal_validity",
+      "criterion": "bilstm_suitability",
       "severity": "BLOCKER",
-      "section_ref": "FEATURE_SPEC#ball_land_features",
-      "finding": "ball_land_x and ball_land_y are used in derived features but these values represent the actual landing location which is unknown at prediction time (only known in training data).",
-      "recommendation": "Remove ball landing coordinates from features. Use only pre-pass information available at throw time. Consider modeling expected landing location based on QB position, receiver routes, and defensive coverage."
+      "section_ref": "sequence_params#window_size",
+      "finding": "Window size of 15 steps (1.5s) may not capture sufficient pre-pass context; unclear how sequences align with prediction frames.",
+      "recommendation": "Analyze typical pre-pass duration distribution and set window_size to capture meaningful movement patterns. Ensure each sequence ends at pass release (frame_id=1 in output)."
     },
     {
       "id": "ISS-002",
-      "criterion": "bilstm_suitability",
-      "severity": "MAJOR",
-      "section_ref": "FEATURE_SPEC#sequence_params",
-      "finding": "Window size of 30 frames (3 seconds) may not align with actual pre-pass sequence lengths. No specification of how sequences are aligned to outcome time t0 (ball release).",
-      "recommendation": "Define alignment policy: sequences should end at frame_id corresponding to ball release. Use variable length sequences up to ball release moment, with padding for shorter sequences."
+      "criterion": "leakage_temporal_validity",
+      "severity": "BLOCKER",
+      "section_ref": "features#ball_land_x",
+      "finding": "Ball landing coordinates are provided in input data but represent future information not available at prediction time.",
+      "recommendation": "Remove ball_land_x and ball_land_y from features. If needed, predict ball landing location from pre-pass data or use as training-only auxiliary information."
     },
     {
       "id": "ISS-003",
-      "criterion": "technical_correctness",
+      "criterion": "bilstm_suitability",
       "severity": "MAJOR",
-      "section_ref": "FEATURE_SPEC#derived_features",
-      "finding": "Multiple derived features (rel_to_ball_x, dist_to_ball, speed_towards_ball) depend on ball_land_x/y which creates data leakage in training.",
-      "recommendation": "Remove all features derived from ball landing coordinates. Focus on relative positioning to QB, other players, and field landmarks available pre-pass."
+      "section_ref": "sequence_params#alignment",
+      "finding": "No explicit alignment policy between input sequences and output prediction frames.",
+      "recommendation": "Define clear mapping: each input sequence (game_id, play_id, nfl_id, frames 1..T) predicts output frames 1..num_frames_output for the same entities."
     },
     {
       "id": "ISS-004",
-      "criterion": "edge_cases",
-      "severity": "MINOR",
-      "section_ref": "FEATURE_SPEC#player_position",
-      "finding": "No OOV strategy specified for player_position embedding. Rare positions may not be well-represented.",
-      "recommendation": "Add OOV bucket for positions with frequency < threshold. Consider position grouping for rare roles."
+      "criterion": "implementation_feasibility",
+      "severity": "MAJOR",
+      "section_ref": "features#derived",
+      "finding": "Derived features (x_velocity, y_velocity, speed_change) require temporal differencing but specification lacks handling of sequence boundaries.",
+      "recommendation": "Implement velocity calculations with careful handling of first frame in each sequence (use zero-padding or special marker)."
     },
     {
       "id": "ISS-005",
-      "criterion": "implementation_feasibility",
+      "criterion": "edge_cases",
+      "severity": "MAJOR",
+      "section_ref": "features#player_to_predict",
+      "finding": "Missing feature for 'player_to_predict' flag which indicates which predictions are scored.",
+      "recommendation": "Add player_to_predict as binary feature to help model distinguish between scored and non-scored players."
+    },
+    {
+      "id": "ISS-006",
+      "criterion": "best_practices",
       "severity": "MINOR",
-      "section_ref": "FEATURE_SPEC#sequence_params",
-      "finding": "No specification of train/validation/test split strategy considering temporal nature of football season data.",
-      "recommendation": "Implement time-based splits by game week to prevent leakage across time. Use earlier weeks for training, later weeks for validation."
+      "section_ref": "sequence_params#validation",
+      "finding": "No validation split strategy specified for temporal data.",
+      "recommendation": "Implement time-based splits by game week or use grouped cross-validation by game_id to prevent data leakage."
+    },
+    {
+      "id": "ISS-007",
+      "criterion": "technical_correctness",
+      "severity": "MINOR",
+      "section_ref": "features#cyclic",
+      "finding": "Cyclic transformation for orientation/direction angles but scaling method 'robust' may not preserve circularity.",
+      "recommendation": "Use sin/cos encoding for cyclic variables (player_o, player_dir, angle_to_ball) instead of robust scaling."
     }
   ],
   "strengths": [
-    "Comprehensive feature set covering motion, position, and contextual variables",
-    "Appropriate cyclical encoding for directional features",
-    "Well-documented normalization and outlier handling strategies",
-    "Clear BiLSTM sequence parameters with padding and masking",
-    "Good mix of raw signals and derived temporal features"
+    "Comprehensive feature engineering with both raw signals and meaningful derived features",
+    "Clear data provenance and transformation pipelines documented",
+    "Appropriate handling of different data types (continuous, categorical, temporal)",
+    "Good outlier handling and normalization strategies",
+    "Explicit latency and availability considerations for online deployment"
   ],
   "areas_for_improvement": [
-    "Eliminate all features dependent on future information (ball landing)",
-    "Define proper temporal alignment between input sequences and prediction targets",
-    "Specify OOV strategies for categorical embeddings",
-    "Implement time-aware data splitting",
-    "Add feature importance analysis to justify dimensionality"
+    "Temporal alignment between input sequences and prediction targets",
+    "Handling of future information (ball landing coordinates)",
+    "Sequence construction and validation strategy",
+    "Cyclic variable encoding methodology",
+    "Edge case handling for sequence boundaries"
   ],
   "acceptance_checklist": [
     "All criteria scored and justified",
@@ -83,37 +99,39 @@
 # Feature Engineering Review (BiLSTM)
 
 ## Summary Assessment
-The feature specification demonstrates strong technical execution with comprehensive coverage of player tracking data and appropriate BiLSTM sequence parameters. However, critical data leakage issues related to ball landing coordinates fundamentally undermine the temporal validity of the approach. The specification requires significant rework to eliminate future information before it can be considered production-ready.
+The specification demonstrates strong technical foundations but has critical blockers in temporal alignment and information leakage. The use of ball landing coordinates represents future information not available at prediction time. Sequence construction needs clearer alignment with the multi-frame prediction task.
 
 ## Detailed Review by Section
-- [FEATURE_SPEC#ball_land_features] Uses ball landing coordinates which represent future information not available at prediction time → Remove all features derived from ball landing coordinates (BLOCKER)
-- [FEATURE_SPEC#sequence_params] Window alignment to outcome time t0 not clearly defined → Align sequences to end at ball release frame with variable length sequences (MAJOR)
-- [FEATURE_SPEC#derived_features] Multiple features depend on leaked ball landing information → Replace with pre-pass relative positioning features (MAJOR)
-- [FEATURE_SPEC#player_position] No OOV strategy for categorical embeddings → Add OOV bucket and consider position grouping (MINOR)
-- [FEATURE_SPEC#sequence_params] No temporal split strategy specified → Implement time-based splits by game week (MINOR)
+- [sequence_params#window_size] Window size may be insufficient for pre-pass context → Analyze typical pre-pass duration and adjust window size (BLOCKER)
+- [features#ball_land_x] Uses future ball landing information → Remove or use as training-only auxiliary (BLOCKER)
+- [sequence_params#alignment] No explicit input-output alignment → Define clear mapping between input sequences and prediction frames (MAJOR)
+- [features#derived] Velocity calculations need boundary handling → Implement special handling for sequence starts (MAJOR)
+- [features#player_to_predict] Missing prediction flag feature → Add player_to_predict as binary indicator (MAJOR)
+- [sequence_params#validation] No temporal validation strategy → Implement time-based or grouped cross-validation (MINOR)
+- [features#cyclic] Robust scaling breaks circularity → Use sin/cos encoding for angles (MINOR)
 
 ## Strengths
-- Comprehensive coverage of player motion and positional data
-- Appropriate cyclical encoding for directional features (orientation, direction)
-- Well-documented normalization strategies with proper train-only fitting
-- Clear BiLSTM sequence parameters with padding and masking support
-- Good mix of raw signals and meaningful derived temporal features
+- Comprehensive feature engineering covering both raw tracking data and meaningful derived features
+- Well-documented transformation pipelines with clear data provenance
+- Appropriate data type handling and normalization strategies
+- Good consideration of online deployment constraints and latency requirements
+- Robust outlier handling with quantile-based clipping
 
 ## Areas for Improvement
-- Critical need to eliminate all features dependent on ball landing coordinates
-- Better definition of temporal alignment between input sequences and prediction targets
-- Specification of OOV handling for categorical variables
-- Implementation of time-aware data splitting strategy
-- Feature importance analysis to justify the current dimensionality
+- Critical need to address temporal information leakage from ball landing coordinates
+- Clearer definition of sequence construction and alignment with multi-frame predictions
+- Improved handling of cyclic variables using proper circular encoding
+- Better edge case management for sequence boundaries in derived features
+- Explicit validation strategy for temporal data splitting
 
 ## Production Readiness
-- CONFIDENCE_SCORE: 75%
+- CONFIDENCE_SCORE: 68%
 - Verdict: Needs Fixes ❌
 
 **Critical Path to Production:**
-1. Immediately remove all ball landing coordinate features and their derivatives
-2. Redesign features using only information available at ball release
-3. Implement proper temporal alignment and splitting
-4. Retest for leakage and temporal validity
+1. Remove ball_land_x/y features or restrict to training context only
+2. Define explicit sequence-to-prediction alignment policy
+3. Implement proper temporal validation splits
+4. Address cyclic variable encoding and sequence boundary handling
 
-CONFIDENCE_SCORE: 75%
+CONFIDENCE_SCORE: 68%
